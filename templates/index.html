@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Failure Risk Prediction System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 40px 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" patternUnits="userSpaceOnUse" width="100" height="100"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            pointer-events: none;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-size: 1.2em;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-container {
+            padding: 40px 30px;
+            background: #fafafa;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+        }
+
+        .form-group {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .form-group:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            color: #555;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 1em;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #4CAF50;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .form-group select {
+            cursor: pointer;
+            appearance: none;
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23666" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+        }
+
+        .submit-container {
+            grid-column: 1 / -1;
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        .submit-btn {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 15px 40px;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 15px rgba(76, 175, 80, 0.4);
+            min-width: 200px;
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(135deg, #45a049 0%, #4CAF50 100%);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(76, 175, 80, 0.6);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+
+        .result-container {
+            margin: 30px;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        .result-container.low-risk {
+            background: linear-gradient(135deg, #4CAF50 0%, #8BC34A 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(76, 175, 80, 0.3);
+        }
+
+        .result-container.high-risk {
+            background: linear-gradient(135deg, #f44336 0%, #FF5722 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(244, 67, 54, 0.3);
+        }
+
+        .result-container.error {
+            background: linear-gradient(135deg, #FF9800 0%, #FF5722 100%);
+            color: white;
+            box-shadow: 0 10px 30px rgba(255, 152, 0, 0.3);
+        }
+
+        .result-container h2 {
+            font-size: 1.8em;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+
+        .prediction {
+            font-size: 1.3em;
+            font-weight: 600;
+            margin-bottom: 10px;
+        }
+
+        .confidence {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .info-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .info-section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .info-section p {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 10px;
+        }
+
+        .warning-box {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        .warning-box strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                margin: 10px;
+                border-radius: 10px;
+            }
+
+            .header {
+                padding: 30px 20px;
+            }
+
+            .header h1 {
+                font-size: 2em;
+            }
+
+            .form-container {
+                padding: 30px 20px;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+                gap: 20px;
+            }
+
+            .result-container,
+            .info-section {
+                margin: 20px;
+                padding: 20px;
+            }
+        }
+
+        /* Loading state */
+        .submit-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            position: relative;
+        }
+
+        .loading::after {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            margin: auto;
+            border: 2px solid transparent;
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 1s ease infinite;
+            top: 0;
+            bottom: 0;
+            left: 0;
+            right: 0;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Heart Failure Risk Prediction System</h1>
+            <p>Advanced AI-powered cardiovascular risk assessment tool</p>
+        </div>
+        
+        <div class="form-container">
+            <form action="/predict" method="post" id="predictionForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="age">Age (years):</label>
+                        <input type="number" id="age" name="age" min="1" max="120" required 
+                               placeholder="Enter patient age">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="sex">Sex:</label>
+                        <select id="sex" name="sex" required>
+                            <option value="">Select gender</option>
+                            <option value="0">Female</option>
+                            <option value="1">Male</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="anaemia">Anaemia:</label>
+                        <select id="anaemia" name="anaemia" required>
+                            <option value="">Select status</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="diabetes">Diabetes:</label>
+                        <select id="diabetes" name="diabetes" required>
+                            <option value="">Select status</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="high_blood_pressure">High Blood Pressure:</label>
+                        <select id="high_blood_pressure" name="high_blood_pressure" required>
+                            <option value="">Select status</option>
+                            <option value="0">No</option>
+                            <option value="1">Yes</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="smoking">Smoking Status:</label>
+                        <select id="smoking" name="smoking" required>
+                            <option value="">Select status</option>
+                            <option value="0">Non-smoker</option>
+                            <option value="1">Smoker</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="ejection_fraction">Ejection Fraction (%):</label>
+                        <input type="number" id="ejection_fraction" name="ejection_fraction" 
+                               min="0" max="100" step="0.1" required 
+                               placeholder="e.g., 38.0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="creatinine_phosphokinase">Creatinine Phosphokinase (mcg/L):</label>
+                        <input type="number" id="creatinine_phosphokinase" name="creatinine_phosphokinase" 
+                               min="0" step="0.1" required 
+                               placeholder="e.g., 582.0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="platelets">Platelets (kiloplatelets/mL):</label>
+                        <input type="number" id="platelets" name="platelets" 
+                               min="0" step="0.01" required 
+                               placeholder="e.g., 265.0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="serum_creatinine">Serum Creatinine (mg/dL):</label>
+                        <input type="number" id="serum_creatinine" name="serum_creatinine" 
+                               min="0" step="0.01" required 
+                               placeholder="e.g., 1.9">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="serum_sodium">Serum Sodium (mEq/L):</label>
+                        <input type="number" id="serum_sodium" name="serum_sodium" 
+                               min="0" step="0.1" required 
+                               placeholder="e.g., 136.0">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="time">Follow-up Period (days):</label>
+                        <input type="number" id="time" name="time" 
+                               min="0" step="1" required 
+                               placeholder="e.g., 4">
+                    </div>
+                    
+                    <div class="submit-container">
+                        <button type="submit" class="submit-btn" id="submitBtn">
+                            Analyze Risk Factors
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        {% if prediction_text %}
+        <div class="result-container {% if result_class %}{{ result_class }}{% endif %}">
+            <h2>Prediction Results</h2>
+            <p class="prediction">{{ prediction_text }}</p>
+            {% if confidence %}
+            <p class="confidence">Confidence Level: {{ confidence }}</p>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <div class="info-section">
+            <h3>About This Prediction System</h3>
+            <p>This AI-powered system analyzes multiple cardiovascular risk factors to predict the likelihood of heart failure. The model considers patient demographics, medical history, and laboratory values to provide risk assessment.</p>
+            
+            <p><strong>Key Parameters Analyzed:</strong></p>
+            <p>• <strong>Ejection Fraction:</strong> Percentage of blood pumped out of the heart with each contraction</p>
+            <p>• <strong>Serum Creatinine:</strong> Kidney function indicator that affects heart health</p>
+            <p>• <strong>Serum Sodium:</strong> Electrolyte balance affecting cardiovascular function</p>
+            <p>• <strong>Creatinine Phosphokinase:</strong> Enzyme levels indicating muscle damage</p>
+            <p>• <strong>Platelets:</strong> Blood clotting factors affecting cardiovascular risk</p>
+            
+            <div class="warning-box">
+                <strong>Medical Disclaimer:</strong>
+                This tool is for educational and research purposes only. It should not replace professional medical advice, diagnosis, or treatment. Always consult qualified healthcare professionals for medical decisions.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Form validation and user experience enhancements
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('predictionForm');
+            const submitBtn = document.getElementById('submitBtn');
+            const inputs = form.querySelectorAll('input, select');
+
+            // Add real-time validation feedback
+            inputs.forEach(input => {
+                input.addEventListener('blur', function() {
+                    validateField(this);
+                });
+
+                input.addEventListener('input', function() {
+                    if (this.classList.contains('error')) {
+                        validateField(this);
+                    }
+                });
+            });
+
+            // Form submission with loading state
+            form.addEventListener('submit', function(e) {
+                let isValid = true;
+                
+                inputs.forEach(input => {
+                    if (!validateField(input)) {
+                        isValid = false;
+                    }
+                });
+
+                if (isValid) {
+                    submitBtn.disabled = true;
+                    submitBtn.classList.add('loading');
+                    submitBtn.textContent = 'Analyzing...';
+                } else {
+                    e.preventDefault();
+                    alert('Please fill in all required fields correctly.');
+                }
+            });
+
+            function validateField(field) {
+                const value = field.value.trim();
+                let isValid = true;
+
+                // Remove previous error styling
+                field.style.borderColor = '';
+                field.style.boxShadow = '';
+
+                if (field.required && !value) {
+                    isValid = false;
+                } else if (field.type === 'number' && value) {
+                    const num = parseFloat(value);
+                    const min = parseFloat(field.min);
+                    const max = parseFloat(field.max);
+                    
+                    if (isNaN(num) || (min !== null && num < min) || (max !== null && num > max)) {
+                        isValid = false;
+                    }
+                }
+
+                if (!isValid) {
+                    field.style.borderColor = '#f44336';
+                    field.style.boxShadow = '0 0 0 3px rgba(244, 67, 54, 0.1)';
+                    field.classList.add('error');
+                } else {
+                    field.classList.remove('error');
+                }
+
+                return isValid;
+            }
+
+            // Add helpful tooltips for medical terms
+            const tooltips = {
+                'ejection_fraction': 'Normal range: 50-70%. Lower values indicate heart muscle weakness.',
+                'serum_creatinine': 'Normal range: 0.6-1.2 mg/dL. Higher values may indicate kidney problems.',
+                'serum_sodium': 'Normal range: 135-145 mEq/L. Abnormal levels can affect heart function.',
+                'creatinine_phosphokinase': 'Normal range: 30-200 mcg/L. Elevated levels may indicate muscle damage.',
+                'platelets': 'Normal range: 150-450 kiloplatelets/mL. Affects blood clotting.'
+            };
+
+            Object.keys(tooltips).forEach(id => {
+                const field = document.getElementById(id);
+                if (field) {
+                    field.title = tooltips[id];
+                }
+            });
+        });
+    </script>
+</body>
+</html>
